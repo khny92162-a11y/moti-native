@@ -1,5 +1,293 @@
-<!doctype html>
-<html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>מוטי</title></head>
-<body style="background:#080b12;color:#f1f4fb;font-family:sans-serif;display:grid;place-items:center;height:100vh;margin:0;text-align:center">
-<div><h2>החלף את הקובץ הזה</h2><p>שים כאן את קובץ ה-HTML שלך, ושנה את שמו ל-index.html</p></div>
-</body></html>
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#1a1a2e">
+  <title>מחשבון מתמטי</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%); min-height: 100vh; display: flex; flex-direction: column; color: #eaeaea; }
+    .calculator { flex: 1; display: flex; flex-direction: column; max-width: 420px; width: 100%; margin: 0 auto; padding: 16px; }
+    .display-area { flex: 0 0 auto; margin-bottom: 16px; }
+    .history { min-height: 28px; font-size: 14px; color: #8892a6; text-align: left; padding: 8px 12px; font-family: 'SF Mono', 'Fira Code', monospace; overflow-x: auto; }
+    .main-display { background: rgba(15, 15, 26, 0.9); border-radius: 16px; padding: 24px 16px; text-align: left; box-shadow: 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); }
+    .expression { font-size: 18px; color: #8892a6; min-height: 24px; margin-bottom: 8px; font-family: 'SF Mono', 'Fira Code', monospace; overflow-x: auto; }
+    .result { font-size: 48px; font-weight: 300; color: #fff; font-family: 'SF Mono', 'Fira Code', monospace; overflow-x: auto; line-height: 1.2; word-break: break-all; }
+    .result.error { color: #ff6b6b; font-size: 24px; }
+    .mode-toggle { display: flex; gap: 8px; margin-bottom: 16px; background: rgba(15, 15, 26, 0.9); padding: 6px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); }
+    .mode-btn { flex: 1; padding: 10px; border: none; background: transparent; color: #8892a6; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; user-select: none; }
+    .mode-btn.active { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: #fff; box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4); }
+    .keypad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+    .btn { aspect-ratio: 1; border: none; border-radius: 14px; font-size: 22px; font-weight: 500; cursor: pointer; transition: all 0.15s ease; display: flex; align-items: center; justify-content: center; user-select: none; position: relative; overflow: hidden; }
+    .btn:active { transform: scale(0.92); }
+    .btn::after { content: ''; position: absolute; inset: 0; background: rgba(255,255,255,0.1); opacity: 0; transition: opacity 0.15s; pointer-events: none; }
+    .btn:active::after { opacity: 1; }
+    .btn.num { background: linear-gradient(180deg, #2a2a3e 0%, #1e1e30 100%); color: #fff; border: 1px solid rgba(255,255,255,0.06); box-shadow: 0 4px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05); }
+    .btn.num:hover { background: linear-gradient(180deg, #33334a 0%, #25253a 100%); }
+    .btn.op { background: linear-gradient(180deg, #6366f1 0%, #4f46e5 100%); color: #fff; box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35); }
+    .btn.op:hover { background: linear-gradient(180deg, #7c7ff3 0%, #6366f1 100%); box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45); }
+    .btn.func { background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%); color: #a5b4fc; border: 1px solid rgba(165, 180, 252, 0.15); }
+    .btn.func:hover { background: linear-gradient(180deg, #25334a 0%, #151f3a 100%); color: #c7d2fe; }
+    .btn.action { background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%); color: #fff; box-shadow: 0 4px 16px rgba(239, 68, 68, 0.35); }
+    .btn.action:hover { background: linear-gradient(180deg, #f87171 0%, #ef4444 100%); }
+    .btn.equals { background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%); color: #fff; box-shadow: 0 4px 16px rgba(34, 197, 94, 0.35); grid-column: span 2; }
+    .btn.equals:hover { background: linear-gradient(180deg, #4ade80 0%, #22c55e 100%); }
+    .btn.wide { grid-column: span 2; }
+    .scientific-row { display: none; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 10px; }
+    .scientific-row.visible { display: grid; animation: slideDown 0.3s ease; }
+    @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    .footer { text-align: center; padding: 16px 8px; color: #556; font-size: 12px; }
+    .haptic { transition: transform 0.05s; }
+    @media (max-width: 360px) { .btn { font-size: 18px; } .result { font-size: 36px; } }
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+  </style>
+</head>
+<body>
+  <div class="calculator" role="application" aria-label="מחשבון מתמטי">
+    <div class="display-area">
+      <div class="history" id="history" aria-live="polite"></div>
+      <div class="main-display">
+        <div class="expression" id="expression" aria-label="ביטוי"></div>
+        <div class="result" id="result" aria-label="תוצאה">0</div>
+      </div>
+    </div>
+    <div class="mode-toggle" role="tablist" aria-label="מצב מחשבון">
+      <button class="mode-btn active" role="tab" aria-selected="true" data-mode="basic" id="modeBasic">בסיסי</button>
+      <button class="mode-btn" role="tab" aria-selected="false" data-mode="scientific" id="modeScientific">מדעי</button>
+    </div>
+    <div class="scientific-row visible" id="sciRow1" aria-label="פונקציות מדעיות שורה 1">
+      <button class="btn func" data-func="sin" aria-label="סינוס">sin</button>
+      <button class="btn func" data-func="cos" aria-label="קוסינוס">cos</button>
+      <button class="btn func" data-func="tan" aria-label="טנגנס">tan</button>
+      <button class="btn func" data-func="π" aria-label="פאי">π</button>
+    </div>
+    <div class="scientific-row visible" id="sciRow2" aria-label="פונקציות מדעיות שורה 2">
+      <button class="btn func" data-func="log" aria-label="לוגריתם בסיס 10">log</button>
+      <button class="btn func" data-func="ln" aria-label="לוגריתם טבעי">ln</button>
+      <button class="btn func" data-func="sqrt" aria-label="שורש ריבועי">√</button>
+      <button class="btn func" data-func="pow" aria-label="חזקה">xʸ</button>
+    </div>
+    <div class="scientific-row visible" id="sciRow3" aria-label="פונקציות מדעיות שורה 3">
+      <button class="btn func" data-func="factorial" aria-label="עצרת">x!</button>
+      <button class="btn func" data-func="exp" aria-label="אקספוננט">eˣ</button>
+      <button class="btn func" data-func="percent" aria-label="אחוז">%</button>
+      <button class="btn func" data-func="reciprocal" aria-label="הופכי">1/x</button>
+    </div>
+    <div class="keypad" role="grid" aria-label="מקלדת מספרים">
+      <button class="btn action" data-action="clear" aria-label="נקה הכל">AC</button>
+      <button class="btn action" data-action="backspace" aria-label="מחק">⌫</button>
+      <button class="btn func" data-func="negate" aria-label="שינוי סימן">±</button>
+      <button class="btn op" data-op="/" aria-label="חילוק">÷</button>
+      <button class="btn num" data-num="7" aria-label="7">7</button>
+      <button class="btn num" data-num="8" aria-label="8">8</button>
+      <button class="btn num" data-num="9" aria-label="9">9</button>
+      <button class="btn op" data-op="*" aria-label="כפל">×</button>
+      <button class="btn num" data-num="4" aria-label="4">4</button>
+      <button class="btn num" data-num="5" aria-label="5">5</button>
+      <button class="btn num" data-num="6" aria-label="6">6</button>
+      <button class="btn op" data-op="-" aria-label="חיסור">−</button>
+      <button class="btn num" data-num="1" aria-label="1">1</button>
+      <button class="btn num" data-num="2" aria-label="2">2</button>
+      <button class="btn num" data-num="3" aria-label="3">3</button>
+      <button class="btn op" data-op="+" aria-label="חיבור">+</button>
+      <button class="btn num wide" data-num="0" aria-label="0">0</button>
+      <button class="btn num" data-num="." aria-label="נקודה עשרונית">.</button>
+      <button class="btn equals" data-action="equals" aria-label="שווה">=</button>
+    </div>
+    <div class="footer">מחשבון מתמטי • נבנה עם ❤️</div>
+  </div>
+  <script>
+    (function() {
+      'use strict';
+      const expressionEl = document.getElementById('expression');
+      const resultEl = document.getElementById('result');
+      const historyEl = document.getElementById('history');
+      const modeBasic = document.getElementById('modeBasic');
+      const modeScientific = document.getElementById('modeScientific');
+      const sciRows = [document.getElementById('sciRow1'), document.getElementById('sciRow2'), document.getElementById('sciRow3')];
+      let currentInput = '0';
+      let expression = '';
+      let lastResult = null;
+      let angleMode = 'deg';
+      let justCalculated = false;
+      function updateDisplay() {
+        expressionEl.textContent = expression || '';
+        resultEl.textContent = formatNumber(currentInput);
+        resultEl.classList.toggle('error', currentInput === 'Error');
+      }
+      function formatNumber(num) {
+        if (num === 'Error') return 'שגיאה';
+        const n = parseFloat(num);
+        if (isNaN(n)) return num;
+        if (!isFinite(n)) return 'אינסוף';
+        if (Math.abs(n) >= 1e10 || (Math.abs(n) < 1e-6 && n !== 0)) return n.toExponential(6);
+        return n.toLocaleString('he-IL', { maximumFractionDigits: 10 });
+      }
+      function addToHistory(text) {
+        historyEl.textContent = text;
+      }
+      function vibrate(pattern) {
+        if (navigator.vibrate) navigator.vibrate(pattern);
+      }
+      function playClick() {
+        vibrate(5);
+        const ctx = window.AudioContext || window.webkitAudioContext;
+        if (ctx) {
+          const audioCtx = new ctx();
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.frequency.value = 800;
+          osc.type = 'sine';
+          gain.gain.setValueAtTime(0.01, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
+          osc.start(audioCtx.currentTime);
+          osc.stop(audioCtx.currentTime + 0.08);
+        }
+      }
+      function toRad(deg) { return deg * Math.PI / 180; }
+      function evaluateExpression(expr) {
+        try {
+          let processed = expr
+            .replace(/×/g, '*')
+            .replace(/÷/g, '/')
+            .replace(/−/g, '-')
+            .replace(/π/g, 'Math.PI')
+            .replace(/e(?![\d.])/g, 'Math.E')
+            .replace(/(\d+(?:\.\d+)?)!/g, (_, n) => factorial(parseInt(n)))
+            .replace(/sqrt\(/g, 'Math.sqrt(')
+            .replace(/sin\(/g, 'Math.sin(' + (angleMode === 'deg' ? 'toRad(' : ''))
+            .replace(/cos\(/g, 'Math.cos(' + (angleMode === 'deg' ? 'toRad(' : ''))
+            .replace(/tan\(/g, 'Math.tan(' + (angleMode === 'deg' ? 'toRad(' : ''))
+            .replace(/log\(/g, 'Math.log10(')
+            .replace(/ln\(/g, 'Math.log(')
+            .replace(/exp\(/g, 'Math.exp(')
+            .replace(/\^|\*\*/g, '**');
+          if (angleMode === 'deg') {
+            processed = processed.replace(/toRad\(/g, '(').replace(/\)\s*\*\s*Math\.PI\s*\/\s*180/g, '*Math.PI/180');
+          }
+          const result = Function('"use strict"; return (' + processed + ')')();
+          if (!isFinite(result)) throw new Error('Infinity');
+          return result;
+        } catch (e) {
+          return 'Error';
+        }
+      }
+      function factorial(n) {
+        if (n < 0 || n > 170 || !Number.isInteger(n)) return NaN;
+        let r = 1;
+        for (let i = 2; i <= n; i++) r *= i;
+        return r;
+      }
+      function handleNumber(num) {
+        playClick();
+        if (justCalculated) { currentInput = '0'; expression = ''; justCalculated = false; }
+        if (currentInput === 'Error') currentInput = '0';
+        if (num === '.' && currentInput.includes('.')) return;
+        if (currentInput === '0' && num !== '.') currentInput = num;
+        else currentInput += num;
+        updateDisplay();
+      }
+      function handleOperator(op) {
+        playClick();
+        if (currentInput === 'Error') return;
+        const opMap = { '+': '+', '-': '−', '*': '×', '/': '÷' };
+        if (justCalculated) { expression = currentInput + ' ' + opMap[op] + ' '; justCalculated = false; }
+        else if (expression && /[+\-×÷]$/.test(expression.trim())) { expression = expression.trim().slice(0, -1) + ' ' + opMap[op] + ' '; }
+        else { expression += currentInput + ' ' + opMap[op] + ' '; }
+        currentInput = '0';
+        updateDisplay();
+      }
+      function handleFunction(func) {
+        playClick();
+        if (currentInput === 'Error') currentInput = '0';
+        let val = parseFloat(currentInput);
+        let result;
+        switch (func) {
+          case 'sin': result = Math.sin(angleMode === 'deg' ? toRad(val) : val); break;
+          case 'cos': result = Math.cos(angleMode === 'deg' ? toRad(val) : val); break;
+          case 'tan': result = Math.tan(angleMode === 'deg' ? toRad(val) : val); break;
+          case 'log': result = val > 0 ? Math.log10(val) : NaN; break;
+          case 'ln': result = val > 0 ? Math.log(val) : NaN; break;
+          case 'sqrt': result = val >= 0 ? Math.sqrt(val) : NaN; break;
+          case 'pow': expression += currentInput + ' ^ '; currentInput = '0'; updateDisplay(); return;
+          case 'factorial': result = Number.isInteger(val) && val >= 0 && val <= 170 ? factorial(val) : NaN; break;
+          case 'exp': result = Math.exp(val); break;
+          case 'percent': result = val / 100; break;
+          case 'reciprocal': result = val !== 0 ? 1 / val : NaN; break;
+          case 'negate': result = -val; break;
+          case 'π': currentInput = Math.PI.toString(); updateDisplay(); return;
+        }
+        if (isNaN(result) || !isFinite(result)) { currentInput = 'Error'; }
+        else { currentInput = result.toString(); justCalculated = true; }
+        updateDisplay();
+      }
+      function handleEquals() {
+        playClick();
+        if (!expression || currentInput === 'Error') return;
+        const fullExpr = expression + currentInput;
+        addToHistory(fullExpr + ' =');
+        const result = evaluateExpression(fullExpr);
+        if (result === 'Error') { currentInput = 'Error'; }
+        else { currentInput = result.toString(); lastResult = result; }
+        expression = '';
+        justCalculated = true;
+        updateDisplay();
+      }
+      function handleClear() {
+        playClick();
+        currentInput = '0';
+        expression = '';
+        justCalculated = false;
+        updateDisplay();
+        addToHistory('');
+      }
+      function handleBackspace() {
+        playClick();
+        if (justCalculated || currentInput === 'Error') { handleClear(); return; }
+        if (currentInput.length <= 1 || (currentInput.length === 2 && currentInput.startsWith('-'))) currentInput = '0';
+        else currentInput = currentInput.slice(0, -1);
+        updateDisplay();
+      }
+      function setMode(mode) {
+        playClick();
+        modeBasic.classList.toggle('active', mode === 'basic');
+        modeScientific.classList.toggle('active', mode === 'scientific');
+        modeBasic.setAttribute('aria-selected', mode === 'basic');
+        modeScientific.setAttribute('aria-selected', mode === 'scientific');
+        sciRows.forEach(row => row.classList.toggle('visible', mode === 'scientific'));
+      }
+      document.querySelectorAll('.btn[data-num]').forEach(btn => {
+        btn.addEventListener('click', () => handleNumber(btn.dataset.num));
+      });
+      document.querySelectorAll('.btn[data-op]').forEach(btn => {
+        btn.addEventListener('click', () => handleOperator(btn.dataset.op));
+      });
+      document.querySelectorAll('.btn[data-func]').forEach(btn => {
+        btn.addEventListener('click', () => handleFunction(btn.dataset.func));
+      });
+      document.querySelector('.btn[data-action="equals"]').addEventListener('click', handleEquals);
+      document.querySelector('.btn[data-action="clear"]').addEventListener('click', handleClear);
+      document.querySelector('.btn[data-action="backspace"]').addEventListener('click', handleBackspace);
+      modeBasic.addEventListener('click', () => setMode('basic'));
+      modeScientific.addEventListener('click', () => setMode('scientific'));
+      document.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT') return;
+        const key = e.key;
+        if (/^\d$/.test(key)) handleNumber(key);
+        else if (key === '.') handleNumber('.');
+        else if (key === '+' || key === '-') handleOperator(key);
+        else if (key === '*') handleOperator('*');
+        else if (key === '/') { e.preventDefault(); handleOperator('/'); }
+        else if (key === 'Enter' || key === '=') handleEquals();
+        else if (key === 'Escape') handleClear();
+        else if (key === 'Backspace') handleBackspace();
+        else if (key === '%') handleFunction('percent');
+      });
+      updateDisplay();
+    })();
+  </script>
+</body>
+</html>
